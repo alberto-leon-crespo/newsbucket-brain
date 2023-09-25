@@ -1,27 +1,18 @@
 from PIL import Image, ImageChops, ImageEnhance
-import os
 import requests
 import matplotlib.pyplot as plt
 from scipy import ndimage
 import numpy as np
-from typing import Tuple
+from typing import Tuple, List
 
 
 class ELA:
+    _image_extension: str = 'jpg'
+
     def __init__(self, image_url: str, download_path: str = 'temp_download', ela_image_path: str = 'temp_ela'):
         self._image_url = image_url
         self._download_path = download_path
         self._ela_image_path = ela_image_path
-
-    def _get_image_url_extension(self):
-        # Obtén el nombre del archivo y la extensión desde la URL
-        nombre_archivo, extension = os.path.splitext(self._image_url)
-        # Elimina cualquier parámetro de consulta en la URL que pueda contener "?" y otros caracteres
-        extension = extension.split('?')[0]
-        # Elimina el punto inicial de la extensión si está presente
-        if extension.startswith('.'):
-            extension = extension[1:]
-        return extension
 
     def _download_image(self) -> Image:
         """Descarga una imagen desde una URL y devuelve una imagen de Pillow."""
@@ -29,7 +20,10 @@ class ELA:
         # Verifica que la petición se haya completado exitosamente
         response.raise_for_status()
 
-        self._download_path = self._download_path + self._get_image_url_extension()
+        self._image_extension = response.headers.get('content-type').split('/')[1]
+
+        self._download_path = self._download_path + "." + self._image_extension
+        self._ela_image_path = self._ela_image_path + "." + self._image_extension
 
         # Guarda la imagen en un archivo temporal
         with open(self._download_path, 'wb') as f:
@@ -62,7 +56,7 @@ class ELA:
         ela_image = ImageEnhance.Brightness(ela_image).enhance(scale_factor * scale)
 
         # Guarda la imagen
-        ela_image.save(self._ela_image_path + self._get_image_url_extension())
+        ela_image.save(self._ela_image_path)
 
         return ela_image  # Retorna la imagen ELA
 
@@ -89,9 +83,18 @@ class ELA:
         threshold = np.percentile(ela_data, percentile)
         return threshold
 
-    def show_image(self, image_path: str):
+    def show_original_image(self):
         # Mostrar la imagen
-        img = plt.imread(image_path)
+        img = plt.imread(self._download_path)
+        plt.figure(figsize=(10, 10))
+        plt.imshow(img)
+        plt.colorbar()
+        plt.axis('off')  # Desactiva los ejes de coordenadas
+        plt.show()
+
+    def show_ela_image(self):
+        # Mostrar la imagen
+        img = plt.imread(self._ela_image_path)
         plt.figure(figsize=(10, 10))
         plt.imshow(img)
         plt.colorbar()
@@ -109,13 +112,13 @@ class ELA:
         plt.axis('off')
         plt.show()
 
-    def calculate_estimated_edit_percentaje(self) -> Tuple[float, int, int]:
+    def calculate_estimated_edit_percentaje(self) -> Tuple[float, int, List[int]]:
         image = self._download_image()
         ela_img = self._ela_analysis(image)
 
         threshold = self._adaptive_threshold(ela_img)
         binarized = self._binarize_ela(ela_img, threshold)
-        labeled_regions, num_of_regions = self._detect_edited_regions(np.array(binarized))
+        labeled_regions_response, num_of_regions_response = self._detect_edited_regions(np.array(binarized))
 
-        probability = self._estimate_edit_probability(labeled_regions)
-        return probability, num_of_regions, labeled_regions
+        probability = self._estimate_edit_probability(labeled_regions_response)
+        return probability, num_of_regions_response, labeled_regions_response
