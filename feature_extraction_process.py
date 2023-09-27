@@ -1,3 +1,4 @@
+import json
 from image_features_extraction import ImageFeaturesExtraction
 from pymongo import MongoClient
 from decouple import config
@@ -29,6 +30,7 @@ for news_doc in news_documents:
     if "imgs" in news_doc:
         img_urls = news_doc["imgs"]
         if len(img_urls) > 0:
+            print("Extacting features from images " + json.dumps(img_urls))
             img_results = noticias_analyzer.analyze_news_images(img_urls)
 
             # Actualizar el documento de noticias con los resultados
