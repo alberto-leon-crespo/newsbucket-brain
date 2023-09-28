@@ -33,54 +33,57 @@ class ImageFeaturesExtraction:
         if output_format not in ['png', 'jpeg', 'pdf', 'ps', 'eps', 'svg']:
             raise ValueError("El formato de salida debe ser uno de: png, jpeg, pdf, ps, eps, svg")
 
-        converted_data = cairosvg.svg2bytestring(bytestring=svg_data, output_format=output_format)
-        return Image.open(BytesIO(converted_data))
+        converted_data = cairosvg.svg2png(svg_data)
+        return Image.open(BytesIO(bytes(converted_data)))
 
     def analyze_news_images(self, image_urls: List[str], output_format='png'):
         results = []
         for img_url in image_urls:
-            response = requests.get(img_url)
+            try:
+                response = requests.get(img_url)
 
-            # Comprobar si la imagen es SVG
-            if 'image/svg+xml' in response.headers.get('content-type', ''):
-                svg_data = response.content
-                image = self.convert_svg_to_format(svg_data, output_format)
-            else:
-                image_extension = response.headers.get('content-type').split('/')[1]
-                image = Image.open(BytesIO(response.content))
+                # Comprobar si la imagen es SVG
+                if 'image/svg+xml' in response.headers.get('content-type', ''):
+                    svg_data = response.content
+                    image = self.convert_svg_to_format(svg_data, output_format)
+                else:
+                    image_extension = response.headers.get('content-type').split('/')[1]
+                    image = Image.open(BytesIO(response.content))
 
-            if image.mode != 'RGB':
-                image = image.convert('RGB')
+                if image.mode != 'RGB':
+                    image = image.convert('RGB')
 
-            # Resto del código sigue igual
-            transform = T.Compose([T.ToTensor()])
-            image_tensor = transform(image).unsqueeze(0)
+                # Resto del código sigue igual
+                transform = T.Compose([T.ToTensor()])
+                image_tensor = transform(image).unsqueeze(0)
 
-            with torch.no_grad():
-                prediction = self.model(image_tensor)
+                with torch.no_grad():
+                    prediction = self.model(image_tensor)
 
-            boxes = prediction[0]['boxes']
-            scores = prediction[0]['scores']
-            labels = prediction[0]['labels']
+                boxes = prediction[0]['boxes']
+                scores = prediction[0]['scores']
+                labels = prediction[0]['labels']
 
-            filtered_boxes = boxes[scores > self.threshold]
-            filtered_scores = scores[scores > self.threshold]
-            filtered_labels = labels[scores > self.threshold]
+                filtered_boxes = boxes[scores > self.threshold]
+                filtered_scores = scores[scores > self.threshold]
+                filtered_labels = labels[scores > self.threshold]
 
-            preprocessed_labels = [self.coco_labels[label.item()] for label in filtered_labels]
+                preprocessed_labels = [self.coco_labels[label.item()] for label in filtered_labels]
 
-            detections = {}
+                detections = {}
 
-            for label in preprocessed_labels:
-                for score in filtered_scores.numpy():
-                    clear_label = re.sub(r'^\d+:\s+', '', label)
-                    final_label = self.translator.translate(clear_label)
-                    detections[final_label] = float(score)
+                for label in preprocessed_labels:
+                    for score in filtered_scores.numpy():
+                        clear_label = re.sub(r'^\d+:\s+', '', label)
+                        final_label = self.translator.translate(clear_label)
+                        detections[final_label] = float(score)
 
-            results.append({
-                'image_url': img_url,
-                'detections': detections
-            })
+                results.append({
+                    'image_url': img_url,
+                    'detections': detections
+                })
+            except Exception as e:
+                print(f"Error processing img {img_url}: {e}")
 
         return results
 
