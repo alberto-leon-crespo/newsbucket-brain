@@ -21,7 +21,7 @@ When you share or redistribute this work, you must provide proper attribution to
 
 ## Contact:
 
-If you wish to obtain additional permissions or have questions about the use of this work, you can contact the author at [author's email].
+If you wish to obtain additional permissions or have questions about the use of this work, you can contact the author at [alberto.leon.crespo@gmail.com](mailto:alberto.leon.crespo@gmail.com).
 
 Thank you for respecting the terms of this license.
 
@@ -52,7 +52,7 @@ Cuando compartas o redistribuyas este trabajo, debes proporcionar atribución ad
 
 ## Contacto:
 
-Si deseas obtener permisos adicionales o tienes preguntas sobre el uso de este trabajo, puedes contactar al autor en [correo electrónico del autor].
+Si deseas obtener permisos adicionales o tienes preguntas sobre el uso de este trabajo, puedes contactar al autor en [alberto.leon.crespo@gmail.com](mailto:alberto.leon.crespo@gmail.com).
 
 Gracias por respetar los términos de esta licencia.
 
